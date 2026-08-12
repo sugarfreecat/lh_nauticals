@@ -1,52 +1,12 @@
 from pathlib import Path
 import csv
-from datetime import datetime
+from helpers.helpers import is_integer, is_numeric, is_boolean, is_date, is_timestamp
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CSV_DIR = BASE_DIR / "1-lh_nautical_csv"
 OUTPUT_PATH = BASE_DIR / "schema" / "schema.sql"
 
-
-def is_integer(value):
-    try:
-        if int(value) and int(value) < 2.1 * 10 ** 9:
-            return True
-        else:
-            return False
-    except ValueError:
-        return False
-
-
-def is_numeric(value):
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
-
-
-def is_boolean(value):
-    return value.lower() in {"true", "false"}
-
-
-def is_date(value):
-    try:
-        datetime.strptime(value, "%Y-%m-%d")
-        return True
-    except ValueError:
-        return False
-
-
-def is_timestamp(value):
-    try:
-        datetime.fromisoformat(value)
-        return True
-    except ValueError:
-        return False
-
-
 def infer_type(values):
-    # Não considera valores vazios na inferência.
     values = [value.strip() for value in values if value.strip()]
 
     if not values:
@@ -67,7 +27,6 @@ def infer_type(values):
     if all(is_timestamp(value) for value in values):
         return "TIMESTAMP"
 
-    # Qualquer valor incompatível faz fallback para TEXT.
     return "TEXT"
 
 
