@@ -1,21 +1,119 @@
 from pathlib import Path
+import csv
+from datetime import datetime
 
-csv_directory = Path(__file__).resolve().parent.parent / "1-lh_nautical_csv"
-csv_files = sorted(csv_directory.glob("*.csv"))
+BASE_DIR = Path(__file__).resolve().parent.parent
+CSV_DIR = BASE_DIR / "1-lh_nautical_csv"
+OUTPUT_PATH = BASE_DIR / "schema" / "schema.sql"
 
-sql_statements = []
-for csv_path in csv_files:
 
-    with csv_path.open("r", encoding="utf-8") as file:
-        lines = file.readlines()
-        header = lines[0].strip().split(",")
+def is_integer(value):
+    try:
+        if int(value) and int(value) < 2.1 * 10 ** 9:
+            return True
+        else:
+            return False
+    except ValueError:
+        return False
 
-    sql_statements.append(f"CREATE TABLE IF NOT EXISTS {csv_path.stem} ({', '.join(header)});")
 
-# Print all generated SQL statements
-# for stmt in sql_statements:
-#     print(stmt)
+def is_numeric(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
-current_directory = Path(__file__).resolve().parent
-with open(current_directory / "schema.sql", "w", encoding="utf-8") as sql_file:
-    sql_file.write("\n".join(sql_statements))
+
+def is_boolean(value):
+    return value.lower() in {"true", "false"}
+
+
+def is_date(value):
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
+def is_timestamp(value):
+    try:
+        datetime.fromisoformat(value)
+        return True
+    except ValueError:
+        return False
+
+
+def infer_type(values):
+    # Não considera valores vazios na inferência.
+    values = [value.strip() for value in values if value.strip()]
+
+    if not values:
+        return "TEXT"
+
+    if all(is_boolean(value) for value in values):
+        return "BOOLEAN"
+
+    if all(is_integer(value) for value in values):
+        return "INTEGER"
+
+    if all(is_numeric(value) for value in values):
+        return "NUMERIC"
+
+    if all(is_date(value) for value in values):
+        return "DATE"
+
+    if all(is_timestamp(value) for value in values):
+        return "TIMESTAMP"
+
+    # Qualquer valor incompatível faz fallback para TEXT.
+    return "TEXT"
+
+
+def infer_table_schema(csv_path):
+    with csv_path.open("r", encoding="utf-8", newline="") as file:
+        reader = csv.reader(file)
+        header = next(reader)
+
+        columns = {column: [] for column in header}
+
+        for row in reader:
+            for column, value in zip(header, row):
+                columns[column].append(value)
+
+    return [
+        (column.strip(), infer_type(values))
+        for column, values in columns.items()
+    ]
+
+
+def generate_sql():
+    sql_blocks = []
+
+    for csv_path in sorted(CSV_DIR.glob("*.csv")):
+        table_name = csv_path.stem
+        columns = infer_table_schema(csv_path)
+
+        columns_sql = ",\n    ".join(
+            f'"{name}" {data_type}'
+            for name, data_type in columns
+        )
+
+        sql = (
+            f'CREATE TABLE IF NOT EXISTS "{table_name}" (\n'
+            f'    {columns_sql}\n'
+            f');'
+        )
+
+        sql_blocks.append(sql)
+
+    OUTPUT_PATH.write_text(
+        "\n\n".join(sql_blocks),
+        encoding="utf-8"
+    )
+
+
+if __name__ == "__main__":
+    generate_sql()
+    print(f"Schema criado em: {OUTPUT_PATH}")
