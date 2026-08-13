@@ -1,21 +1,78 @@
 from pathlib import Path
+import csv
+from helpers.helpers import is_integer, is_numeric, is_boolean, is_date, is_timestamp
 
-csv_directory = Path(__file__).resolve().parent.parent / "1-lh_nautical_csv"
-csv_files = sorted(csv_directory.glob("*.csv"))
+BASE_DIR = Path(__file__).resolve().parent.parent
+CSV_DIR = BASE_DIR / "1-lh_nautical_csv"
+OUTPUT_PATH = BASE_DIR / "schema" / "schema.sql"
 
-sql_statements = []
-for csv_path in csv_files:
+def infer_type(values):
+    values = [value.strip() for value in values if value.strip()]
 
-    with csv_path.open("r", encoding="utf-8") as file:
-        lines = file.readlines()
-        header = lines[0].strip().split(",")
+    if not values:
+        return "TEXT"
 
-    sql_statements.append(f"CREATE TABLE IF NOT EXISTS {csv_path.stem} ({', '.join(header)});")
+    if all(is_boolean(value) for value in values):
+        return "BOOLEAN"
 
-# Print all generated SQL statements
-# for stmt in sql_statements:
-#     print(stmt)
+    if all(is_integer(value) for value in values):
+        return "INTEGER"
 
-current_directory = Path(__file__).resolve().parent
-with open(current_directory / "schema.sql", "w", encoding="utf-8") as sql_file:
-    sql_file.write("\n".join(sql_statements))
+    if all(is_numeric(value) for value in values):
+        return "NUMERIC"
+
+    if all(is_date(value) for value in values):
+        return "DATE"
+
+    if all(is_timestamp(value) for value in values):
+        return "TIMESTAMP"
+
+    return "TEXT"
+
+
+def infer_table_schema(csv_path):
+    with csv_path.open("r", encoding="utf-8", newline="") as file:
+        reader = csv.reader(file)
+        header = next(reader)
+
+        columns = {column: [] for column in header}
+
+        for row in reader:
+            for column, value in zip(header, row):
+                columns[column].append(value)
+
+    return [
+        (column.strip(), infer_type(values))
+        for column, values in columns.items()
+    ]
+
+
+def generate_sql():
+    sql_blocks = []
+
+    for csv_path in sorted(CSV_DIR.glob("*.csv")):
+        table_name = csv_path.stem
+        columns = infer_table_schema(csv_path)
+
+        columns_sql = ",\n    ".join(
+            f'"{name}" {data_type}'
+            for name, data_type in columns
+        )
+
+        sql = (
+            f'CREATE TABLE IF NOT EXISTS "{table_name}" (\n'
+            f'    {columns_sql}\n'
+            f');'
+        )
+
+        sql_blocks.append(sql)
+
+    OUTPUT_PATH.write_text(
+        "\n\n".join(sql_blocks),
+        encoding="utf-8"
+    )
+
+
+if __name__ == "__main__":
+    generate_sql()
+    print(f"Schema criado em: {OUTPUT_PATH}")
