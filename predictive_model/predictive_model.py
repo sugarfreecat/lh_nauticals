@@ -76,6 +76,9 @@ def format_predictions(test, predictions):
 def mean_absolute_error(results):
     return (results["vendas_reais"] - results["vendas_previstas"]).abs().mean()
 
+def total_sum_of_sales(results):
+    return results["vendas_previstas"].sum()
+
 if __name__ == "__main__":
     products, product_variants, orders, order_items = load_data()
     unified_df = merge_data(products, product_variants, orders, order_items)
@@ -85,5 +88,7 @@ if __name__ == "__main__":
     predictions = predict_sales(training, test)
     results = format_predictions(test, predictions)
     mae = mean_absolute_error(results)
+    total_predicted = total_sum_of_sales(results)
     print(results)
     print(f"Mean Absolute Error: {mae:.2f}")
+    print(f"Soma Total da Previsão de Vendas: {total_predicted:.0f}")
