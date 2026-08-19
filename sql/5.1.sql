@@ -19,6 +19,7 @@ vendas_diarias as (
         sum(total) as venda
     from orders
     where channel = 'pos'
+    and placed_at < now()
     group by placed_at::date
 )
 select dc.dia_semana, avg(coalesce(vd.venda, 0)) as media_vendas

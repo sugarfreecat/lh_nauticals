@@ -1,10 +1,10 @@
 from pathlib import Path
 import csv
-from helpers.helpers import is_integer, is_numeric, is_boolean, is_date, is_timestamp
+from helpers import is_integer, is_numeric, is_boolean, is_date, is_timestamp
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_DIR = BASE_DIR / "1-lh_nautical_csv"
-OUTPUT_PATH = BASE_DIR / "schema" / "schema.sql"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+CSV_DIR = BASE_DIR / "data"
+OUTPUT_PATH = BASE_DIR / "sql/schema.sql"
 
 def infer_type(values):
     values = [value.strip() for value in values if value.strip()]

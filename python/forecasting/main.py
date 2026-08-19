@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-CSV_DIR = Path(__file__).resolve().parent.parent / "1-lh_nautical_csv"
+CSV_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 products_csv = CSV_DIR / "products.csv"
 product_variants_csv = CSV_DIR / "product_variants.csv"
 orders_csv = CSV_DIR / "orders.csv"

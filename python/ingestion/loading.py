@@ -3,7 +3,7 @@ import psycopg
 from pathlib import Path
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 DB_HOST = os.environ.get("POSTGRES_HOST", "localhost")
@@ -12,8 +12,8 @@ DB_USER = os.environ.get("POSTGRES_USER", "postgres")
 DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
 DB_NAME = os.environ.get("POSTGRES_DB", "lh_nauticals")
 
-SCHEMA_FILE = BASE_DIR / "schema/schema.sql"
-CSV_DIRECTORY = BASE_DIR / "1-lh_nautical_csv"
+SCHEMA_FILE = BASE_DIR / "sql/schema.sql"
+CSV_DIRECTORY = BASE_DIR / "data"
 
 def create_database():
     with psycopg.connect(
